@@ -126,74 +126,126 @@ const triviaQuiz = [{
   },
 ]
 
+// Enable the passage of the 'this' object through the JavaScript timers
+var __nativeST__ = window.setTimeout,
+  __nativeSI__ = window.setInterval;
 
+window.setTimeout = function (vCallback, nDelay /*, argumentToPass1, argumentToPass2, etc. */ ) {
+  var oThis = this,
+    aArgs = Array.prototype.slice.call(arguments, 2);
+  return __nativeST__(vCallback instanceof Function ? function () {
+    vCallback.apply(oThis, aArgs);
+  } : vCallback, nDelay);
+};
+
+window.setInterval = function (vCallback, nDelay /*, argumentToPass1, argumentToPass2, etc. */ ) {
+  var oThis = this,
+    aArgs = Array.prototype.slice.call(arguments, 2);
+  return __nativeSI__(vCallback instanceof Function ? function () {
+    vCallback.apply(oThis, aArgs);
+  } : vCallback, nDelay);
+};
+
+//
+// Timer object for counting down seconds for the trivia quiz
+//
 const timer = {
-  id: null,
-  mSec: 1000,
-  callBackFunc: null,
-  expireFunc: null,
-  counter: 10,
-  start: function() {
+  id: 0, // setInterval will return non-zero
+  mSec: 1000, // timer interval in micro seconds
+  callerObj: null, // Object/class using this timer
+  callbackFunc: null, // callback function
+  counter: 10, // Timer counter in seconds
+  start: function (timeLimit = 10) {
     if (timer.id) {
       timer.stop();
     }
-    timer.id = setInterval(timer.callBackFunc, timer.mSec);
+    timer.counter = timeLimit;
+    timer.id = setInterval.call(timer.callerObj, timer.callbackFunc, timer.mSec);
   },
-  stop: function() {
+  stop: function () {
     if (timer.id) {
       clearInterval(timer.id);
       timer.id = null;
     }
-  }  
+  }
 }
 
-
+//
+// A class for running the trivia quiz game
+//
 class QuizRunner {
   constructor(quizObj, timeLimitSec = 10) {
-    this.srcQuiz = quizObj;         // quiz data object
-    this.ndxQuiz = 0;               // current quiz array index
-    this.timeLimit = timeLimitSec;  // time limit per quiz in second
+    this.srcQuiz = quizObj; // quiz data object
+    this.ndxQuiz = -1; // current quiz array index
+    this.timeLimit = timeLimitSec; // time limit per quiz in second
   }
 
+  //
+  // 
+  //
   start() {
-    timer.timeLimit = this.timeLimit;
-    timer.callBackFunc = this.countDown;
-    timer.expireFunc = this.showAnswer;
-    timer.start();
+    if (this.ndxQuiz < this.srcQuiz.length) {
+      this.ndxQuiz++;
+    } else {
+      this.ndxQuiz = 0;
+    }
+    this.nextQuiz();
+  }
+
+  nextQuiz() {
+    timer.callerObj = this;
+    timer.callbackFunc = this.countDown;
+    timer.start(this.timeLimit);
     this.showQuestion(this.srcQuiz[this.ndxQuiz]);
-    $(".trivia").on("click", ".choice", this.userAnswer);
+    // $(".trivia").on("click", ".choice", this, this.userAnswer);
+    $(".choice").on("click", this, this.userAnswer);
   }
 
   countDown() {
     timer.counter--;
     $("#timer").html("<h2>" + timer.counter + "</h2>");
     $("#timer").text(timer.counter);
-  
+
     if (timer.counter === 0) {
       timer.stop();
-      timer.expireFunc();
+      timer.callerObj.showAnswer();
     }
   }
-  
+
   showQuestion(quiz) {
     $(".trivia").html("<h2>" + quiz.question + "</h2>");
     for (let i = 0; i < quiz.choice.length; i++) {
-      $(".trivia").append(`<h3 class="choice" id="c-${i}">${quiz.choice[i]}</h3>`);
+      // $(".trivia").append(`<h3 class="choice" id="c-${i}">${quiz.choice[i]}</h3>`);
+      $(".trivia").append(`<h3 class="choice">${quiz.choice[i]}</h3>`);
     }
   }
-  
-  userAnswer() {
+
+  userAnswer(event) {
     timer.stop();
-    let ansIndex = parseInt($(this).attr("id").charAt(2));
-    console.log("id = " + $(this).attr("id"));
-    console.log("Index = " + ansIndex);
+    let self = event.data;
+    let selected = this.innerText;
+    let selNdx = self.srcQuiz[self.ndxQuiz].choice.findIndex(function(item) {
+      return item === selected;
+    });
+    let ansNdx = self.srcQuiz[self.ndxQuiz].answer.ndx;
+    console.log("selected = " + this.innerText + " [" + selNdx + "]");
+    console.log("answer ndx = " + ansNdx);
+    self.showAnswer(selNdx === ansNdx);
   }
-  
-  showAnswer() {
+
+  showAnswer(isCorrect = false) {
+    this.clearChoices(this.srcQuiz[this.ndxQuiz].choice);
     let aNdx = this.srcQuiz[this.ndxQuiz].answer.ndx;
-    $(".trivia").html(this.srcQuiz[this.ndxQuiz].choice[aNdx] + "<br>");
-    $(".trivia").append(this.srcQuiz[this.ndxQuiz].answer.comment);
-    this.ndxQuiz++;
-    setTimeout(this.start, 3000);
+    $(".trivia").html(this.srcQuiz[this.ndxQuiz].choice[aNdx]);
+    if (isCorrect) {
+      $(".trivia").append(" CORRECT! <br>")
+    }
+    $(".trivia").append("<br>", this.srcQuiz[this.ndxQuiz].answer.comment);
+    setTimeout.call(this, this.start, 3000); // pause 3 seconds
+  }
+
+  clearChoices(choices) {
+    $(".trivia").removeClass("choice");
+    $(".trivia").empty();
   }
 }
