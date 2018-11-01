@@ -126,7 +126,11 @@ const triviaQuiz = [{
   },
 ]
 
-// Enable the passage of the 'this' object through the JavaScript timers
+//
+// The scope of setTimeout() and setInterval() is global/window, imposing a problem w/ "this". 
+// https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/setInterval#The_this_problem
+// The workaround to enable the passage of the 'this' object through the JavaScript timers
+//
 var __nativeST__ = window.setTimeout,
   __nativeSI__ = window.setInterval;
 
@@ -150,11 +154,11 @@ window.setInterval = function (vCallback, nDelay /*, argumentToPass1, argumentTo
 // Timer object for counting down seconds for the trivia quiz
 //
 const timer = {
-  id: 0, // setInterval will return non-zero
-  mSec: 1000, // timer interval in micro seconds
-  callerObj: null, // Object/class using this timer
+  id: 0,              // setInterval will return non-zero
+  mSec: 1000,         // timer interval in micro seconds
+  callerObj: null,    // Object/class using this timer
   callbackFunc: null, // callback function
-  counter: 10, // Timer counter in seconds
+  counter: 10,        // Timer counter in seconds
   start: function (timeLimit = 10) {
     if (timer.id) {
       timer.stop();
@@ -175,32 +179,41 @@ const timer = {
 //
 class QuizRunner {
   constructor(quizObj, timeLimitSec = 10) {
-    this.srcQuiz = quizObj; // quiz data object
-    this.ndxQuiz = -1; // current quiz array index
-    this.timeLimit = timeLimitSec; // time limit per quiz in second
+    this.srcQuiz = quizObj;         // quiz data object
+    this.ndxQuiz = -1;              // current quiz array index
+    this.timeLimit = timeLimitSec;  // time limit per quiz in second
   }
 
   //
-  // 
+  // (re-)Start the quiz game
   //
   start() {
-    if (this.ndxQuiz < this.srcQuiz.length) {
+    if ((this.ndxQuiz + 1) < this.srcQuiz.length) {
       this.ndxQuiz++;
+      this.nextQuiz();
     } else {
       this.ndxQuiz = 0;
+      // TO-DO: Show restart button
     }
-    this.nextQuiz();
   }
 
+  //
+  // Next quiz
+  // 1. Start the countdown timer
+  // 2. Show a new question
+  // 3. Wait for an user click event
+  //
   nextQuiz() {
     timer.callerObj = this;
     timer.callbackFunc = this.countDown;
     timer.start(this.timeLimit);
     this.showQuestion(this.srcQuiz[this.ndxQuiz]);
-    // $(".trivia").on("click", ".choice", this, this.userAnswer);
     $(".choice").on("click", this, this.userAnswer);
   }
 
+  //
+  // A callback function for the countdown timer
+  //
   countDown() {
     timer.counter--;
     $("#timer").html("<h2>" + timer.counter + "</h2>");
@@ -212,38 +225,59 @@ class QuizRunner {
     }
   }
 
+  //
+  // 1. Display a question from the quiz data object
+  // 2. List the choices with "choice" css class
+  //
   showQuestion(quiz) {
     $(".trivia").html("<h2>" + quiz.question + "</h2>");
     for (let i = 0; i < quiz.choice.length; i++) {
-      // $(".trivia").append(`<h3 class="choice" id="c-${i}">${quiz.choice[i]}</h3>`);
       $(".trivia").append(`<h3 class="choice">${quiz.choice[i]}</h3>`);
     }
   }
 
+  //
+  // An event handler for user click on one of the answer choices.
+  // 1. Identify the user selection by an array index
+  // 2. Identify the correct answer by an array index
+  // 3. Call showAnswer()
+  //
   userAnswer(event) {
     timer.stop();
+
     let self = event.data;
     let selected = this.innerText;
+    let ansNdx = self.srcQuiz[self.ndxQuiz].answer.ndx;
     let selNdx = self.srcQuiz[self.ndxQuiz].choice.findIndex(function(item) {
       return item === selected;
     });
-    let ansNdx = self.srcQuiz[self.ndxQuiz].answer.ndx;
+
     console.log("selected = " + this.innerText + " [" + selNdx + "]");
     console.log("answer ndx = " + ansNdx);
+
     self.showAnswer(selNdx === ansNdx);
   }
 
+  //
+  // 
+  //
   showAnswer(isCorrect = false) {
     this.clearChoices(this.srcQuiz[this.ndxQuiz].choice);
     let aNdx = this.srcQuiz[this.ndxQuiz].answer.ndx;
+
     $(".trivia").html(this.srcQuiz[this.ndxQuiz].choice[aNdx]);
+
     if (isCorrect) {
       $(".trivia").append(" CORRECT! <br>")
     }
+
     $(".trivia").append("<br>", this.srcQuiz[this.ndxQuiz].answer.comment);
     setTimeout.call(this, this.start, 3000); // pause 3 seconds
   }
 
+  //
+  // Clean up the choice class for a quiz
+  //
   clearChoices(choices) {
     $(".trivia").removeClass("choice");
     $(".trivia").empty();
