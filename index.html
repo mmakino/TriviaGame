@@ -20,17 +20,18 @@
     </header>
 
     <section class="remaining-time">
-      <h2>Time Remaining: <span id="timer">0</span> Seconds</h2>
+      <h2>Time Remaining: <span id="timer"></span> Seconds</h2>
     </section>
 
-    <section class="middle">
-      question
-    </section>
-
-    <section class="bottom">
-      answers
-    </section>
+    <section class="trivia"></section>
   </div>
+
+  <script>
+    $(document).ready(() => {
+      let quiz = new QuizRunner(triviaQuiz, 10);
+      quiz.start();
+    });
+  </script>
 </body>
 
-</html>
+</html> 
