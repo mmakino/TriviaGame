@@ -168,7 +168,7 @@ const timer = {
   stop: function() {
     if (this.id) {
       clearInterval(this.id);
-      this.id = null;
+      this.id = 0;
     }
   }
 }
