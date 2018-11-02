@@ -22,11 +22,11 @@ A Trivia game written in JavaScript and jQuery.
 +--- README.md
 +--- homework-instructions.md
 +--- assets
-|   +--- css
-|   |   +--- reset.css
-|   |   +--- style.css
-|   +--- images
-|   |   +--- doodles.png
-|   +--- javascript
-|   |   +--- app.js
+    +--- css
+    |   +--- reset.css
+    |   +--- style.css
+    +--- images
+    |   +--- doodles.png
+    +--- javascript
+        +--- app.js
 ```
