@@ -16,20 +16,24 @@
 <body>
   <div class="main-box">
     <header>
-      <h1>Trivia Game</h1>
+      <h1>No-frills Trivia</h1>
     </header>
 
     <section class="remaining-time">
       <h2>Time Remaining: <span id="timer"></span> Seconds</h2>
     </section>
 
-    <section class="content"></section>
+    <section class="content">
+      <button type="button" class="btn btn-primary btn-lg btn-block" id="start">START</button>
+    </section>
   </div>
 
   <script>
     $(document).ready(() => {
-      let quiz = new QuizRunner(triviaQuiz, 11);
-      quiz.start();
+      $("#start").click(function() {
+        let quiz = new QuizRunner(triviaQuiz, 11);
+        quiz.start();
+      });
     });
   </script>
 </body>

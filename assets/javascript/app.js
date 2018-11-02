@@ -178,9 +178,11 @@ const timer = {
 //
 class QuizRunner {
   constructor(quizObj, timeLimitSec = 10) {
-    this.srcQuiz = quizObj;         // quiz data object
-    this.ndxQuiz = -1;              // current quiz array index
-    this.timeLimit = timeLimitSec;  // time limit per quiz in second
+    this.srcQuiz = quizObj;           // quiz data object
+    this.ndxQuiz = -1;                // current quiz array index
+    this.timeLimit = timeLimitSec;    // time limit per quiz in second
+    this.pauseSec = 3500;             // micro-seconds before next quiz 
+    this.answers = this.initStats();  // stats to display at the end
   }
 
   //
@@ -191,8 +193,7 @@ class QuizRunner {
       this.ndxQuiz++;
       this.nextQuiz();
     } else {
-      this.ndxQuiz = 0;
-      // TO-DO: Show restart button
+      this.allDone();
     }
   }
 
@@ -215,7 +216,6 @@ class QuizRunner {
   //
   countDown() {
     timer.counter--;
-    $("#timer").html("<h2>" + timer.counter + "</h2>");
     $("#timer").text(timer.counter);
 
     if (timer.counter === 0) {
@@ -258,7 +258,7 @@ class QuizRunner {
   }
 
   //
-  // Display the answer
+  // Display the correct answer and accumulate the stats
   //
   showAnswer(userAns, isCorrect = false) {
     this.clearChoices(this.srcQuiz[this.ndxQuiz].choice);
@@ -267,13 +267,20 @@ class QuizRunner {
     let comment = this.srcQuiz[this.ndxQuiz].answer.comment;
 
     if (isCorrect) {
-      this.showCorrectAnswer(answer, comment);
+      this.showCorrect(answer, comment);
+      this.answers.correct += 1;
     }
     else {
-      this.showIncorrectAnswer(userAns, answer, comment);
+      this.showIncorrect(userAns, answer, comment);
+      if (userAns) {
+        this.answers.incorrect += 1;
+      }
+      else {
+        this.answers.unanswered += 1;
+      }
     }
 
-    setTimeout.call(this, this.start, 3500); // pause 3.5 seconds
+    setTimeout.call(this, this.start, this.pauseSec);
   }
 
   //
@@ -287,7 +294,7 @@ class QuizRunner {
   //
   // User got the correct answer
   //
-  showCorrectAnswer(answer, comment) {
+  showCorrect(answer, comment) {
     $(".content").html('<h2 class="answer">' + answer +  ' is CORRECT!</h2>');
     $(".content").append("<br>", '<h2 class="answer">' + comment + '</h2>');
   }
@@ -295,7 +302,7 @@ class QuizRunner {
   //
   // User's answer was incorrect. Display the correct answer
   //
-  showIncorrectAnswer(userAns, answer, comment) {
+  showIncorrect(userAns, answer, comment) {
     if (userAns) {
       $(".content").html('<h2 class="answer"> Sorry. Your answer "' + userAns +  '" is not correct.</h2>');
     }
@@ -304,5 +311,33 @@ class QuizRunner {
     }
     $(".content").append('<br> <h2 class="answer">The correct answer is <strong>' + answer + "</strong>. </h2>"); 
     $(".content").append('<h2 class="answer">' + comment + '</h2>');
+  }
+
+  //
+  // The end of game stats 
+  //
+  allDone() {
+    $(".content").html('<h2 class="answer">All done, here is how you did!</h2>');
+    $(".content").append('<div><h2 class="answer">Correct Answers: ' + this.answers.correct + '</h2></div>');
+    $(".content").append('<div><h2 class="answer">Incorrect Answers: ' + this.answers.incorrect + '</h2></div>');
+    $(".content").append('<div><h2 class="answer">Unanswered: ' + this.answers.unanswered + '</h2></div>');
+    $(".content").append('<button type="button" class="btn btn-primary btn-lg btn-block" id="start">START OVER?</button>');
+    $(".btn").click(() => {
+      this.answers = this.initStats();
+      this.ndxQuiz = -1;
+      this.start();
+    });
+  }
+
+  //
+  // Return initial game stats data object w/ all zero(0)
+  //
+  initStats() {
+    let answers = {
+      correct: 0,
+      incorrect: 0,
+      unanswered: 0
+    }
+    return answers;
   }
 }
