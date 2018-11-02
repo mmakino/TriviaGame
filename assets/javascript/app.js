@@ -131,21 +131,20 @@ const triviaQuiz = [{
 // https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/setInterval#The_this_problem
 // The workaround to enable the passage of the 'this' object through the JavaScript timers
 //
-var __nativeST__ = window.setTimeout,
-  __nativeSI__ = window.setInterval;
+var __nativeST__ = window.setTimeout, __nativeSI__ = window.setInterval;
 
-window.setTimeout = function (vCallback, nDelay /*, argumentToPass1, argumentToPass2, etc. */ ) {
+window.setTimeout = function(vCallback, nDelay /*, argumentToPass1, argumentToPass2, etc. */ ) {
   var oThis = this,
     aArgs = Array.prototype.slice.call(arguments, 2);
-  return __nativeST__(vCallback instanceof Function ? function () {
+  return __nativeST__(vCallback instanceof Function ? function() {
     vCallback.apply(oThis, aArgs);
   } : vCallback, nDelay);
 };
 
-window.setInterval = function (vCallback, nDelay /*, argumentToPass1, argumentToPass2, etc. */ ) {
+window.setInterval = function(vCallback, nDelay /*, argumentToPass1, argumentToPass2, etc. */ ) {
   var oThis = this,
     aArgs = Array.prototype.slice.call(arguments, 2);
-  return __nativeSI__(vCallback instanceof Function ? function () {
+  return __nativeSI__(vCallback instanceof Function ? function() {
     vCallback.apply(oThis, aArgs);
   } : vCallback, nDelay);
 };
@@ -159,17 +158,17 @@ const timer = {
   callerObj: null,    // Object/class using this timer
   callbackFunc: null, // callback function
   counter: 10,        // Timer counter in seconds
-  start: function (timeLimit = 10) {
-    if (timer.id) {
-      timer.stop();
+  start: function(timeLimit = 10) {
+    if (this.id) {
+      this.stop();
     }
-    timer.counter = timeLimit;
-    timer.id = setInterval.call(timer.callerObj, timer.callbackFunc, timer.mSec);
+    this.counter = timeLimit;
+    this.id = setInterval.call(this.callerObj, this.callbackFunc, this.mSec);
   },
-  stop: function () {
-    if (timer.id) {
-      clearInterval(timer.id);
-      timer.id = null;
+  stop: function() {
+    if (this.id) {
+      clearInterval(this.id);
+      this.id = null;
     }
   }
 }
@@ -230,9 +229,9 @@ class QuizRunner {
   // 2. List the choices with "choice" css class
   //
   showQuestion(quiz) {
-    $(".trivia").html("<h2>" + quiz.question + "</h2>");
+    $(".content").html('<h2 class="question">' + quiz.question + "</h2>");
     for (let i = 0; i < quiz.choice.length; i++) {
-      $(".trivia").append(`<h3 class="choice">${quiz.choice[i]}</h3>`);
+      $(".content").append(`<h3 class="choice">${quiz.choice[i]}</h3>`);
     }
   }
 
@@ -255,31 +254,55 @@ class QuizRunner {
     console.log("selected = " + this.innerText + " [" + selNdx + "]");
     console.log("answer ndx = " + ansNdx);
 
-    self.showAnswer(selNdx === ansNdx);
+    self.showAnswer(selected, selNdx === ansNdx);
   }
 
   //
-  // 
+  // Display the answer
   //
-  showAnswer(isCorrect = false) {
+  showAnswer(userAns, isCorrect = false) {
     this.clearChoices(this.srcQuiz[this.ndxQuiz].choice);
     let aNdx = this.srcQuiz[this.ndxQuiz].answer.ndx;
-
-    $(".trivia").html(this.srcQuiz[this.ndxQuiz].choice[aNdx]);
+    let answer = this.srcQuiz[this.ndxQuiz].choice[aNdx];
+    let comment = this.srcQuiz[this.ndxQuiz].answer.comment;
 
     if (isCorrect) {
-      $(".trivia").append(" CORRECT! <br>")
+      this.showCorrectAnswer(answer, comment);
+    }
+    else {
+      this.showIncorrectAnswer(userAns, answer, comment);
     }
 
-    $(".trivia").append("<br>", this.srcQuiz[this.ndxQuiz].answer.comment);
-    setTimeout.call(this, this.start, 3000); // pause 3 seconds
+    setTimeout.call(this, this.start, 3500); // pause 3.5 seconds
   }
 
   //
   // Clean up the choice class for a quiz
   //
   clearChoices(choices) {
-    $(".trivia").removeClass("choice");
-    $(".trivia").empty();
+    $(".content").removeClass("choice question")
+    $(".content").empty();
+  }
+
+  //
+  // User got the correct answer
+  //
+  showCorrectAnswer(answer, comment) {
+    $(".content").html('<h2 class="answer">' + answer +  ' is CORRECT!</h2>');
+    $(".content").append("<br>", '<h2 class="answer">' + comment + '</h2>');
+  }
+
+  //
+  // User's answer was incorrect. Display the correct answer
+  //
+  showIncorrectAnswer(userAns, answer, comment) {
+    if (userAns) {
+      $(".content").html('<h2 class="answer"> Sorry. Your answer "' + userAns +  '" is not correct.</h2>');
+    }
+    else {
+      $(".content").html('<h2 class="answer" />');
+    }
+    $(".content").append('<br> <h2 class="answer">The correct answer is <strong>' + answer + "</strong>. </h2>"); 
+    $(".content").append('<h2 class="answer">' + comment + '</h2>');
   }
 }
