@@ -35,9 +35,7 @@ const timer = {
   callbackFunc: null, // callback function
   counter: 10,        // Timer counter in seconds
   start: function(timeLimit = 10) {
-    if (this.id) {
-      this.stop();
-    }
+    this.stop();
     this.counter = timeLimit;
     this.id = setInterval.call(this.callerObj, this.callbackFunc, this.mSec);
   },
@@ -54,11 +52,13 @@ const timer = {
 //
 class QuizRunner {
   constructor(quizObj, timeLimitSec = 10) {
-    this.srcQuiz = quizObj;           // quiz data object
-    this.ndxQuiz = -1;                // current quiz array index
-    this.timeLimit = timeLimitSec;    // time limit per quiz in second
-    this.pauseSec = 3500;             // micro-seconds before next quiz 
-    this.answers = this.initStats();  // stats to display at the end
+    this.srcQuiz = quizObj;              // quiz data object
+    this.ndxQuiz = -1;                   // current quiz array index
+    this.timeLimit = timeLimitSec;       // time limit per quiz in second
+    this.pauseSec = 3500;                // micro-seconds before next quiz
+    this.answers = this.initStats();     // stats to display at the end
+    timer.callerObj = this;              // set w/ this class
+    timer.callbackFunc = this.countDown; // countdown timer function
   }
 
   //
@@ -80,8 +80,6 @@ class QuizRunner {
   // 3. Wait for an user click event
   //
   nextQuiz() {
-    timer.callerObj = this;
-    timer.callbackFunc = this.countDown;
     timer.start(this.timeLimit);
     this.showQuestion(this.srcQuiz[this.ndxQuiz]);
     $(".choice").on("click", this, this.userAnswer);
@@ -91,13 +89,13 @@ class QuizRunner {
   // A callback function for the countdown timer
   //
   countDown() {
-    timer.counter--;
     $("#timer").text(timer.counter);
 
     if (timer.counter === 0) {
       timer.stop();
       timer.callerObj.showAnswer();
     }
+    timer.counter--;
   }
 
   //
@@ -137,7 +135,6 @@ class QuizRunner {
   // Display the correct answer and accumulate the stats
   //
   showAnswer(userAns, isCorrect = false) {
-    this.clearChoices(this.srcQuiz[this.ndxQuiz].choice);
     let aNdx = this.srcQuiz[this.ndxQuiz].answer.ndx;
     let answer = this.srcQuiz[this.ndxQuiz].choice[aNdx];
     let comment = this.srcQuiz[this.ndxQuiz].answer.comment;
@@ -160,19 +157,11 @@ class QuizRunner {
   }
 
   //
-  // Clean up the choice class for a quiz
-  //
-  clearChoices(choices) {
-    $(".content").removeClass("choice question")
-    $(".content").empty();
-  }
-
-  //
   // User got the correct answer
   //
   showCorrect(answer, comment) {
-    $(".content").html('<h2 class="answer">' + answer +  ' is CORRECT!</h2>');
-    $(".content").append("<br>", '<h2 class="answer">' + comment + '</h2>');
+    $(".content").html('<h2 class="answer">' + answer + ' is CORRECT!</h2>')
+      .append("<br>", '<h2 class="answer">' + comment + '</h2>');
   }
 
   //
@@ -185,19 +174,19 @@ class QuizRunner {
     else {
       $(".content").html('<h2 class="answer" />');
     }
-    $(".content").append('<br> <h2 class="answer">The correct answer is <strong>' + answer + "</strong>. </h2>"); 
-    $(".content").append('<h2 class="answer">' + comment + '</h2>');
-  }
+    $(".content").append('<br> <h2 class="answer">The correct answer is <strong>' + answer + "</strong>. </h2>")
+      .append('<h2 class="answer">' + comment + '</h2>');
+    }
 
   //
   // The end of game stats 
   //
   allDone() {
-    $(".content").html('<h2 class="answer">All done, here is how you did!</h2>');
-    $(".content").append('<div><h2 class="answer">Correct Answers: ' + this.answers.correct + '</h2></div>');
-    $(".content").append('<div><h2 class="answer">Incorrect Answers: ' + this.answers.incorrect + '</h2></div>');
-    $(".content").append('<div><h2 class="answer">Unanswered: ' + this.answers.unanswered + '</h2></div>');
-    $(".content").append('<button type="button" class="btn btn-primary btn-lg btn-block" id="start">START OVER?</button>');
+    $(".content").html('<h2 class="answer">All done, here is how you did!</h2>')
+      .append('<div><h2 class="answer">Correct Answers: ' + this.answers.correct + '</h2></div>')
+      .append('<div><h2 class="answer">Incorrect Answers: ' + this.answers.incorrect + '</h2></div>')
+      .append('<div><h2 class="answer">Unanswered: ' + this.answers.unanswered + '</h2></div>')
+      .append('<button type="button" class="btn btn-primary btn-lg btn-block" id="start">START OVER?</button>');
     $(".btn").click(() => {
       this.answers = this.initStats();
       this.ndxQuiz = -1;
